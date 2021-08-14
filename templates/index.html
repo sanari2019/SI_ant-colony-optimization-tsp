@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Ant Colony Optimization - TSP Solver</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 0;
+            min-height: 800px;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            padding: 25px;
+            border-right: 1px solid #dee2e6;
+            overflow-y: auto;
+            max-height: 800px;
+        }
+
+        .control-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .control-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 0.95em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 4px;
+            color: #888;
+            font-size: 0.85em;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #c82333;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .visualization-area {
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .canvas-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            position: relative;
+        }
+
+        .canvas-container h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        #tspCanvas {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: crosshair;
+            background: #fafafa;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            height: 300px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card .label {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.idle {
+            background: #6c757d;
+        }
+
+        .status-indicator.running {
+            background: #28a745;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .variant-info {
+            background: #e7f3ff;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                max-height: none;
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐜 Advanced Ant Colony Optimization</h1>
+            <p>Interactive Traveling Salesman Problem Solver with Multiple ACO Variants</p>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="control-section">
+                    <h3>🎯 Problem Setup</h3>
+                    <div class="form-group">
+                        <label>Number of Cities</label>
+                        <input type="number" id="nCities" value="25" min="5" max="100">
+                        <small>Click canvas to add cities manually</small>
+                    </div>
+                    <button class="btn-secondary" onclick="generateRandomCities()">
+                        Generate Random Cities
+                    </button>
+                    <button class="btn-secondary" onclick="clearCities()">
+                        Clear All Cities
+                    </button>
+                </div>
+
+                <div class="control-section">
+                    <h3>⚙️ Algorithm Settings</h3>
+
+                    <div class="form-group">
+                        <label>ACO Variant</label>
+                        <select id="variant" onchange="updateVariantInfo()">
+                            <option value="MMAS">Max-Min Ant System (MMAS)</option>
+                            <option value="ACS">Ant Colony System (ACS)</option>
+                            <option value="RANK">Rank-based Ant System</option>
+                            <option value="AS">Basic Ant System (AS)</option>
+                        </select>
+                    </div>
+
+                    <div id="variantInfo" class="variant-info"></div>
+
+                    <div class="form-group">
+                        <label>Number of Ants</label>
+                        <input type="number" id="nAnts" value="30" min="1" max="100">
+                        <small>More ants = better exploration</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Iterations</label>
+                        <input type="number" id="nIterations" value="100" min="10" max="500">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Alpha (α) - Pheromone Importance</label>
+                        <input type="number" id="alpha" value="1.0" min="0" max="5" step="0.1">
+                        <small>Higher = more pheromone influence</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Beta (β) - Distance Importance</label>
+                        <input type="number" id="beta" value="3.0" min="0" max="10" step="0.1">
+                        <small>Higher = prefer shorter distances</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Evaporation Rate (ρ)</label>
+                        <input type="number" id="evaporationRate" value="0.1" min="0" max="1" step="0.01">
+                        <small>Higher = faster exploration</small>
+                    </div>
+
+                    <div class="form-group" id="q0Group">
+                        <label>Q0 - Exploitation vs Exploration (ACS)</label>
+                        <input type="number" id="q0" value="0.9" min="0" max="1" step="0.05">
+                        <small>Higher = more exploitation</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="localSearch" checked>
+                            Enable 2-opt Local Search
+                        </label>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>🚀 Control</h3>
+                    <button class="btn-primary" id="startBtn" onclick="startAlgorithm()">
+                        Start Optimization
+                    </button>
+                    <button class="btn-danger" id="stopBtn" onclick="stopAlgorithm()" disabled>
+                        Stop Algorithm
+                    </button>
+                </div>
+
+                <div class="control-section">
+                    <h3>📊 Status</h3>
+                    <div style="margin-bottom: 10px;">
+                        <span class="status-indicator idle" id="statusIndicator"></span>
+                        <span id="statusText">Idle</span>
+                    </div>
+                    <div id="iterationInfo" style="font-size: 0.9em; color: #666;"></div>
+                </div>
+            </aside>
+
+            <main class="visualization-area">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="label">Best Distance</div>
+                        <div class="value" id="bestDistance">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Current Iteration</div>
+                        <div class="value" id="currentIteration">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Average Distance</div>
+                        <div class="value" id="avgDistance">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Cities</div>
+                        <div class="value" id="cityCount">0</div>
+                    </div>
+                </div>
+
+                <div class="canvas-container">
+                    <h3>🗺️ TSP Visualization</h3>
+                    <canvas id="tspCanvas" width="900" height="600"></canvas>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #e74c3c; border-radius: 50%;"></div>
+                            <span>Cities</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #3498db;"></div>
+                            <span>Best Tour</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: rgba(52, 152, 219, 0.1);"></div>
+                            <span>Pheromone Trails</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #2ecc71; border-radius: 50%;"></div>
+                            <span>Start City</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="convergenceChart"></canvas>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let socket;
+        let cities = [];
+        let bestPath = null;
+        let pheromones = null;
+        let isRunning = false;
+        let convergenceChart = null;
+        let iterationData = {
+            iterations: [],
+            bestDistances: [],
+            avgDistances: []
+        };
+
+        // Canvas setup
+        const canvas = document.getElementById('tspCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSocket();
+            initializeChart();
+            updateVariantInfo();
+            drawCanvas();
+
+            // Canvas click handler for manual city placement
+            canvas.addEventListener('click', function(e) {
+                if (!isRunning) {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    cities.push([x, y]);
+                    updateCityCount();
+                    drawCanvas();
+                }
+            });
+        });
+
+        function initializeSocket() {
+            socket = io();
+
+            socket.on('connect', function() {
+                console.log('Connected to server');
+            });
+
+            socket.on('iteration_update', function(data) {
+                updateVisualization(data);
+            });
+
+            socket.on('algorithm_complete', function(data) {
+                console.log('Algorithm complete', data);
+                setRunningState(false);
+                alert(`Optimization complete!\nBest distance: ${data.best_distance.toFixed(2)}`);
+            });
+
+            socket.on('algorithm_stopped', function(data) {
+                console.log('Algorithm stopped');
+                setRunningState(false);
+            });
+
+            socket.on('error', function(data) {
+                console.error('Error:', data.message);
+                alert('Error: ' + data.message);
+                setRunningState(false);
+            });
+        }
+
+        function initializeChart() {
+            const chartCtx = document.getElementById('convergenceChart').getContext('2d');
+            convergenceChart = new Chart(chartCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Best Distance',
+                            data: [],
+                            borderColor: '#2ecc71',
+                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Average Distance',
+                            data: [],
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Convergence Over Iterations',
+                            font: { size: 16 }
+                        },
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Distance'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Iteration'
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 0
+                    }
+                }
+            });
+        }
+
+        function updateVariantInfo() {
+            const variant = document.getElementById('variant').value;
+            const infoDiv = document.getElementById('variantInfo');
+            const q0Group = document.getElementById('q0Group');
+
+            const variantInfoText = {
+                'MMAS': 'Uses pheromone bounds [τ_min, τ_max] to prevent premature convergence. Only the best ant deposits pheromones.',
+                'ACS': 'Uses pseudo-random proportional rule with Q0 parameter. Includes local pheromone updates during construction.',
+                'RANK': 'Ranks ants by solution quality. Only top-ranked ants deposit pheromones with decreasing weights.',
+                'AS': 'Original Ant System. All ants deposit pheromones proportional to solution quality.'
+            };
+
+            infoDiv.textContent = variantInfoText[variant];
+            q0Group.style.display = variant === 'ACS' ? 'block' : 'none';
+        }
+
+        function generateRandomCities() {
+            const nCities = parseInt(document.getElementById('nCities').value);
+            cities = [];
+
+            for (let i = 0; i < nCities; i++) {
+                cities.push([
+                    Math.random() * (canvas.width - 40) + 20,
+                    Math.random() * (canvas.height - 40) + 20
+                ]);
+            }
+
+            updateCityCount();
+            drawCanvas();
+        }
+
+        function clearCities() {
+            cities = [];
+            bestPath = null;
+            pheromones = null;
+            updateCityCount();
+            drawCanvas();
+        }
+
+        function updateCityCount() {
+            document.getElementById('cityCount').textContent = cities.length;
+        }
+
+        function startAlgorithm() {
+            if (cities.length < 3) {
+                alert('Please add at least 3 cities');
+                return;
+            }
+
+            // Reset data
+            iterationData = {
+                iterations: [],
+                bestDistances: [],
+                avgDistances: []
+            };
+            convergenceChart.data.labels = [];
+            convergenceChart.data.datasets[0].data = [];
+            convergenceChart.data.datasets[1].data = [];
+            convergenceChart.update();
+
+            // Gather parameters
+            const params = {
+                cities: cities,
+                variant: document.getElementById('variant').value,
+                n_ants: parseInt(document.getElementById('nAnts').value),
+                n_iterations: parseInt(document.getElementById('nIterations').value),
+                alpha: parseFloat(document.getElementById('alpha').value),
+                beta: parseFloat(document.getElementById('beta').value),
+                evaporation_rate: parseFloat(document.getElementById('evaporationRate').value),
+                q0: parseFloat(document.getElementById('q0').value),
+                local_search: document.getElementById('localSearch').checked
+            };
+
+            setRunningState(true);
+            socket.emit('start_aco', params);
+        }
+
+        function stopAlgorithm() {
+            socket.emit('stop_aco');
+        }
+
+        function setRunningState(running) {
+            isRunning = running;
+            document.getElementById('startBtn').disabled = running;
+            document.getElementById('stopBtn').disabled = !running;
+
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+
+            if (running) {
+                indicator.classList.remove('idle');
+                indicator.classList.add('running');
+                statusText.textContent = 'Running...';
+            } else {
+                indicator.classList.remove('running');
+                indicator.classList.add('idle');
+                statusText.textContent = 'Idle';
+            }
+        }
+
+        function updateVisualization(data) {
+            // Update stats
+            document.getElementById('bestDistance').textContent = data.best_distance.toFixed(2);
+            document.getElementById('currentIteration').textContent = data.iteration;
+            document.getElementById('avgDistance').textContent = data.avg_distance.toFixed(2);
+
+            document.getElementById('iterationInfo').innerHTML = `
+                Iteration ${data.iteration}<br>
+                Best: ${data.best_distance.toFixed(2)}<br>
+                Iter Best: ${data.iteration_best.toFixed(2)}<br>
+                Avg: ${data.avg_distance.toFixed(2)}
+            `;
+
+            // Update best path
+            if (data.best_path) {
+                bestPath = data.best_path;
+            }
+
+            // Update pheromones
+            if (data.pheromones) {
+                pheromones = data.pheromones;
+            }
+
+            // Update chart
+            iterationData.iterations.push(data.iteration);
+            iterationData.bestDistances.push(data.best_distance);
+            iterationData.avgDistances.push(data.avg_distance);
+
+            convergenceChart.data.labels = iterationData.iterations;
+            convergenceChart.data.datasets[0].data = iterationData.bestDistances;
+            convergenceChart.data.datasets[1].data = iterationData.avgDistances;
+            convergenceChart.update();
+
+            // Redraw canvas
+            drawCanvas();
+        }
+
+        function drawCanvas() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (cities.length === 0) {
+                ctx.fillStyle = '#999';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Click to add cities or generate random cities', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            // Draw pheromone trails
+            if (pheromones && cities.length > 0) {
+                const maxPheromone = Math.max(...pheromones.flat());
+
+                for (let i = 0; i < cities.length; i++) {
+                    for (let j = i + 1; j < cities.length; j++) {
+                        const pheromone = pheromones[i][j];
+                        const opacity = (pheromone / maxPheromone) * 0.3;
+
+                        if (opacity > 0.01) {
+                            ctx.strokeStyle = `rgba(52, 152, 219, ${opacity})`;
+                            ctx.lineWidth = 1 + (opacity * 3);
+                            ctx.beginPath();
+                            ctx.moveTo(cities[i][0], cities[i][1]);
+                            ctx.lineTo(cities[j][0], cities[j][1]);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            // Draw best path
+            if (bestPath && bestPath.length > 0) {
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+
+                for (let i = 0; i < bestPath.length; i++) {
+                    const cityIdx = bestPath[i];
+                    const city = cities[cityIdx];
+
+                    if (i === 0) {
+                        ctx.moveTo(city[0], city[1]);
+                    } else {
+                        ctx.lineTo(city[0], city[1]);
+                    }
+                }
+
+                // Close the tour
+                const firstCity = cities[bestPath[0]];
+                ctx.lineTo(firstCity[0], firstCity[1]);
+                ctx.stroke();
+            }
+
+            // Draw cities
+            cities.forEach((city, idx) => {
+                const isStart = bestPath && bestPath.length > 0 && idx === bestPath[0];
+
+                ctx.fillStyle = isStart ? '#2ecc71' : '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(city[0], city[1], isStart ? 8 : 6, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Draw city number
+                ctx.fillStyle = '#333';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(idx.toString(), city[0], city[1] - 12);
+            });
+        }
+    </script>
+</body>
+</html>
