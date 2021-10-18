@@ -288,6 +288,78 @@
                 border-right: none;
                 border-bottom: 1px solid #dee2e6;
             }
+
+            #tspCanvas {
+                width: 100%;
+                height: auto;
+                max-width: 900px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            header p {
+                font-size: 0.95em;
+            }
+
+            .sidebar {
+                padding: 15px;
+            }
+
+            .control-section {
+                padding: 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            #tspCanvas {
+                width: 100%;
+                height: 400px;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+
+            .legend {
+                gap: 10px;
+            }
+
+            .legend-item {
+                font-size: 0.8em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 1.5em;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card .value {
+                font-size: 1.5em;
+            }
+
+            #tspCanvas {
+                height: 300px;
+            }
+
+            .form-group input,
+            .form-group select {
+                font-size: 16px; /* Prevent zoom on iOS */
+            }
         }
     </style>
 </head>
@@ -466,20 +538,45 @@
             initializeSocket();
             initializeChart();
             updateVariantInfo();
+            resizeCanvas();
             drawCanvas();
 
             // Canvas click handler for manual city placement
             canvas.addEventListener('click', function(e) {
                 if (!isRunning) {
                     const rect = canvas.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    const x = (e.clientX - rect.left) * scaleX;
+                    const y = (e.clientY - rect.top) * scaleY;
                     cities.push([x, y]);
                     updateCityCount();
                     drawCanvas();
                 }
             });
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                resizeCanvas();
+                drawCanvas();
+            });
         });
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const maxWidth = Math.min(900, container.clientWidth - 40);
+
+            if (window.innerWidth <= 768) {
+                canvas.width = maxWidth;
+                canvas.height = 400;
+            } else if (window.innerWidth <= 480) {
+                canvas.width = maxWidth;
+                canvas.height = 300;
+            } else {
+                canvas.width = 900;
+                canvas.height = 600;
+            }
+        }
 
         function initializeSocket() {
             socket = io();

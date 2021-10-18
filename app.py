@@ -10,7 +10,7 @@ import time
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'aco-visualization-secret'
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Global state
 current_aco = None
@@ -135,7 +135,7 @@ def handle_start_aco(data):
             stop_requested = False
 
             try:
-                emit('algorithm_started', {'message': 'Algorithm started'})
+                socketio.emit('algorithm_started', {'message': 'Algorithm started'})
                 best_path, best_distance = current_aco.solve(verbose=False)
 
                 if not stop_requested:
@@ -151,7 +151,11 @@ def handle_start_aco(data):
                 is_running = False
 
         thread = threading.Thread(target=run_algorithm)
+        thread.daemon = True
         thread.start()
+
+        # Emit initial response
+        emit('algorithm_starting', {'message': 'Algorithm starting...'})
 
     except Exception as e:
         emit('error', {'message': f'Error starting algorithm: {str(e)}'})

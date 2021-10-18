@@ -141,3 +141,10 @@ Thumbs.db
 !docs/*.png
 !docs/*.jpg
 outputs/
+
+# Node.js / React Frontend
+aco-explorer-main/aco-explorer-main/node_modules/
+aco-explorer-main/aco-explorer-main/dist/
+aco-explorer-main/aco-explorer-main/.vite/
+aco-explorer-main/aco-explorer-main/bun.lockb
+aco-explorer-main/aco-explorer-main/package-lock.json
