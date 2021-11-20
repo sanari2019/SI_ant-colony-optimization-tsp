@@ -70,10 +70,20 @@ def handle_disconnect():
     stop_requested = True
 
 
+@socketio.on('test_connection')
+def handle_test_connection(data):
+    """Test connection handler."""
+    print(f'[TEST] Received test_connection event: {data}')
+    emit('test_response', {'message': 'Backend received your message'})
+
+
 @socketio.on('start_aco')
 def handle_start_aco(data):
     """Start ACO algorithm with given parameters."""
     global current_aco, is_running, stop_requested
+
+    print(f"[DEBUG] Received start_aco event with data keys: {data.keys()}")
+    print(f"[DEBUG] Cities data: {data.get('cities', 'NOT FOUND')[:3] if 'cities' in data else 'NO CITIES'}")
 
     if is_running:
         emit('error', {'message': 'Algorithm is already running'})
@@ -82,6 +92,7 @@ def handle_start_aco(data):
     try:
         # Parse parameters
         cities = np.array(data['cities'])
+        print(f"[DEBUG] Parsed cities array shape: {cities.shape}")
         variant_name = data.get('variant', 'MMAS')
         n_ants = data.get('n_ants', 20)
         n_iterations = data.get('n_iterations', 100)
