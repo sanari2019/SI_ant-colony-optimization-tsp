@@ -69,8 +69,14 @@ const Index = () => {
 
     socket.on("connect", () => {
       console.log("Connected to backend");
+      console.log("Socket ID:", socket.id);
+      console.log("Socket connected:", socket.connected);
+      console.log("Socket transport:", socket.io.engine.transport.name);
       setStatus("Connected");
       setStatusDetail("Ready to start");
+
+      // Test emit to verify connection
+      socket.emit("test_connection", { message: "React frontend connected" });
     });
 
     socket.on("disconnect", () => {
@@ -148,7 +154,7 @@ const Index = () => {
       }
     }
 
-    // Draw best path
+    // Draw best path (Hamiltonian Cycle)
     if (bestPath.length > 0 && cities.length > 0) {
       ctx.strokeStyle = "#3b82f6";
       ctx.lineWidth = 2;
@@ -157,21 +163,87 @@ const Index = () => {
       for (let i = 1; i < bestPath.length; i++) {
         ctx.lineTo(cities[bestPath[i]].x, cities[bestPath[i]].y);
       }
+      // Close the Hamiltonian cycle (tour returns to start)
       ctx.lineTo(cities[bestPath[0]].x, cities[bestPath[0]].y);
       ctx.stroke();
+
+      // Draw directional arrows along the path to show it's a cycle
+      ctx.fillStyle = "#3b82f6";
+      for (let i = 0; i < bestPath.length; i++) {
+        const cityIdx = bestPath[i];
+        const nextIdx = bestPath[(i + 1) % bestPath.length];
+        const city = cities[cityIdx];
+        const nextCity = cities[nextIdx];
+
+        // Calculate midpoint
+        const midX = (city.x + nextCity.x) / 2;
+        const midY = (city.y + nextCity.y) / 2;
+
+        // Calculate angle
+        const angle = Math.atan2(nextCity.y - city.y, nextCity.x - city.x);
+
+        // Draw arrow
+        const arrowSize = 8;
+        ctx.save();
+        ctx.translate(midX, midY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-arrowSize, -arrowSize / 2);
+        ctx.lineTo(-arrowSize, arrowSize / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
     }
 
-    // Draw cities
+    // Draw cities with start/end indicators
     cities.forEach((city, index) => {
-      ctx.fillStyle = index === 0 && bestPath.length > 0 ? "#22c55e" : "#ef4444";
+      const isStart = bestPath.length > 0 && index === bestPath[0];
+      const isEnd = bestPath.length > 1 && index === bestPath[bestPath.length - 1];
+
+      // Determine city color and size
+      let fillColor, radius;
+      if (isStart) {
+        fillColor = "#22c55e"; // Green for start
+        radius = 10;
+      } else if (isEnd) {
+        fillColor = "#a855f7"; // Purple for end
+        radius = 10;
+      } else {
+        fillColor = "#ef4444"; // Red for regular cities
+        radius = 6;
+      }
+
+      // Draw city circle
+      ctx.fillStyle = fillColor;
       ctx.beginPath();
-      ctx.arc(city.x, city.y, 6, 0, 2 * Math.PI);
+      ctx.arc(city.x, city.y, radius, 0, 2 * Math.PI);
       ctx.fill();
+
+      // Add white border for start/end cities
+      if (isStart || isEnd) {
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
 
       // Draw city number
       ctx.fillStyle = "#1f2937";
       ctx.font = "12px sans-serif";
-      ctx.fillText(index.toString(), city.x - 5, city.y - 10);
+      ctx.textAlign = "center";
+      ctx.fillText(index.toString(), city.x, city.y - 15);
+
+      // Draw START/END labels
+      if (isStart) {
+        ctx.fillStyle = "#22c55e";
+        ctx.font = "bold 11px sans-serif";
+        ctx.fillText("START", city.x, city.y + 22);
+      } else if (isEnd) {
+        ctx.fillStyle = "#a855f7";
+        ctx.font = "bold 11px sans-serif";
+        ctx.fillText("END", city.x, city.y + 22);
+      }
     });
   }, [cities, bestPath, pheromones]);
 
