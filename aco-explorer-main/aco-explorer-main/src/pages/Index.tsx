@@ -2,6 +2,7 @@ import { Activity, Play, Trash2, Shuffle, ChevronDown, ChevronUp, StopCircle } f
 import { useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { Line } from "react-chartjs-2";
+import { Button } from "@/components/ui/button";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -176,8 +177,12 @@ const Index = () => {
 
   // Generate random cities
   const generateCities = () => {
+    console.log("Generate cities clicked!");
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      console.log("Canvas not found");
+      return;
+    }
 
     const newCities: City[] = [];
     const margin = 50;
@@ -187,6 +192,7 @@ const Index = () => {
         y: margin + Math.random() * (canvas.height - 2 * margin),
       });
     }
+    console.log(`Generated ${newCities.length} cities`);
     setCities(newCities);
     setBestPath([]);
     setPheromones(null);
@@ -225,6 +231,10 @@ const Index = () => {
 
   // Start optimization
   const startOptimization = () => {
+    console.log("Start optimization clicked!");
+    console.log("Cities count:", cities.length);
+    console.log("Socket connected:", socketRef.current?.connected);
+
     if (cities.length < 3) {
       alert("Please add at least 3 cities");
       return;
@@ -235,7 +245,7 @@ const Index = () => {
       return;
     }
 
-    socketRef.current.emit("start_aco", {
+    const payload = {
       cities: cities,
       variant: variant,
       n_ants: numAnts,
@@ -245,7 +255,10 @@ const Index = () => {
       evaporation_rate: rho,
       q0: q0,
       local_search: localSearch,
-    });
+    };
+
+    console.log("Emitting start_aco with payload:", payload);
+    socketRef.current.emit("start_aco", payload);
   };
 
   // Stop optimization
@@ -344,20 +357,21 @@ const Index = () => {
                     className="w-full mt-1 px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
-                <button
+                <Button
                   onClick={generateCities}
-                  className="w-full bg-gradient-primary text-primary-foreground py-2 px-4 rounded-md text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-primary text-primary-foreground"
                 >
                   <Shuffle className="h-4 w-4" />
                   Generate Random Cities
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={clearCities}
-                  className="w-full border border-border bg-background py-2 px-4 rounded-md text-sm font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2"
+                  variant="outline"
+                  className="w-full"
                 >
                   <Trash2 className="h-4 w-4" />
                   Clear All Cities
-                </button>
+                </Button>
               </div>
 
               {/* Algorithm Settings */}
@@ -483,22 +497,25 @@ const Index = () => {
                   <h3 className="font-semibold mb-3 text-foreground">Control & Status</h3>
                   <p className="text-xs text-muted-foreground mb-4">Start and monitor the algorithm</p>
                 </div>
-                <button
+                <Button
                   onClick={startOptimization}
                   disabled={isRunning}
-                  className="w-full bg-gradient-success text-success-foreground py-3 px-4 rounded-md text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-success text-success-foreground py-3"
+                  size="lg"
                 >
                   <Play className="h-4 w-4" />
                   Start Optimization
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={stopOptimization}
                   disabled={!isRunning}
-                  className="w-full bg-destructive text-destructive-foreground py-3 px-4 rounded-md text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  variant="destructive"
+                  className="w-full py-3"
+                  size="lg"
                 >
                   <StopCircle className="h-4 w-4" />
                   Stop Algorithm
-                </button>
+                </Button>
                 <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-md border border-border">
                   <div className={`w-3 h-3 rounded-full ${
                     status === "Running" ? "bg-success animate-pulse" :

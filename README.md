@@ -4,7 +4,28 @@ An interactive web-based implementation of multiple Ant Colony Optimization (ACO
 
 ## Overview
 
-This project includes both a command-line Python implementation and an interactive web interface that demonstrates various ACO algorithm variants inspired by swarm intelligence research.
+This project includes both a command-line Python implementation and two interactive web interfaces:
+- **Flask HTML Interface**: Traditional server-rendered interface at `http://localhost:5000`
+- **React TypeScript Frontend**: Modern SPA with advanced UI components at `http://localhost:8081`
+
+Both interfaces connect to the same Flask backend via WebSocket for real-time algorithm visualization.
+
+## Quick Start
+
+```bash
+# 1. Install Python dependencies
+pip install -r requirements.txt
+
+# 2. Start Flask backend
+python app.py
+
+# 3. In a new terminal, install and run React frontend
+cd aco-explorer-main/aco-explorer-main
+npm install
+npm run dev
+
+# 4. Open browser to http://localhost:8081
+```
 
 ## Features
 
@@ -48,23 +69,90 @@ This project includes both a command-line Python implementation and an interacti
 - **Click-to-add cities** or random generation
 - **Dynamic statistics** updated each iteration
 
+### Technology Stack
+
+**Backend:**
+- Python 3.8+
+- Flask - Web framework
+- Flask-SocketIO - WebSocket support for real-time updates
+- NumPy - Numerical computations
+- Threading - Async algorithm execution
+
+**Frontend (React):**
+- React 18 - UI framework
+- TypeScript - Type-safe JavaScript
+- Vite - Build tool and dev server
+- Tailwind CSS - Utility-first styling
+- Shadcn/ui - Component library
+- Socket.IO Client - WebSocket client
+- Chart.js - Data visualization
+- Canvas API - City and path rendering
+
+**Frontend (Flask HTML):**
+- Vanilla JavaScript
+- Socket.IO - Real-time communication
+- Chart.js - Convergence visualization
+- HTML5 Canvas - Graphics rendering
+
 ## Installation
 
 ### Prerequisites
 
+**Backend:**
 - Python 3.8 or higher
 - pip package manager
 
+**Frontend (React):**
+- Node.js 16 or higher
+- npm or bun package manager
+
 ### Setup
 
-1. Install dependencies:
+#### Backend Setup
+
+1. Install Python dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
+#### Frontend Setup
+
+1. Navigate to the React app directory:
+```bash
+cd aco-explorer-main/aco-explorer-main
+```
+
+2. Install Node dependencies:
+```bash
+npm install
+# or
+bun install
+```
+
 ## Usage
 
-### Running the Web Application
+### Running the Full Application
+
+#### Option 1: React Frontend (Recommended)
+
+1. **Terminal 1 - Start Flask Backend:**
+```bash
+python app.py
+```
+
+2. **Terminal 2 - Start React Frontend:**
+```bash
+cd aco-explorer-main/aco-explorer-main
+npm run dev
+# or
+bun run dev
+```
+
+3. **Access the application:**
+   - React Frontend: `http://localhost:8081`
+   - Flask Backend: `http://localhost:5000`
+
+#### Option 2: Flask HTML Interface
 
 1. Start the Flask server:
 ```bash
@@ -291,21 +379,63 @@ Solution quality typically within 1-5% of optimal for instances up to 100 cities
 
 ```
 files/
-├── advanced_aco.py          # Advanced ACO implementation with all variants
-├── tsp_aco.py               # Basic ACO implementation (original)
-├── app.py                   # Flask server with WebSocket support
-├── requirements.txt         # Python dependencies
+├── advanced_aco.py                          # Advanced ACO implementation with all variants
+├── tsp_aco.py                               # Basic ACO implementation (original)
+├── app.py                                   # Flask server with WebSocket support
+├── requirements.txt                         # Python dependencies
 ├── templates/
-│   └── index.html          # Interactive web interface
-└── README.md               # This file
+│   └── index.html                          # Flask HTML interface
+├── aco-explorer-main/
+│   └── aco-explorer-main/                  # React TypeScript frontend
+│       ├── src/
+│       │   ├── pages/
+│       │   │   └── Index.tsx              # Main React component with ACO logic
+│       │   ├── components/
+│       │   │   └── ui/                    # Shadcn/ui components
+│       │   ├── lib/
+│       │   └── index.css                  # Tailwind CSS styles
+│       ├── package.json                    # Node dependencies
+│       ├── vite.config.ts                  # Vite configuration
+│       └── tailwind.config.ts              # Tailwind configuration
+├── test_basic.py                            # Basic ACO tests
+├── test_advanced.py                         # Advanced variant tests
+├── TESTING_GUIDE.md                         # Comprehensive testing documentation
+├── REACT_INTEGRATION_COMPLETE.md            # Frontend integration guide
+└── README.md                                # This file
 ```
 
 ## Troubleshooting
 
+### Backend Issues
+
+**Flask server won't start:**
+- Check if port 5000 is already in use
+- Verify all Python dependencies are installed
+- Check Python version (3.8+ required)
+
+**WebSocket connection errors:**
+- Ensure Flask-SocketIO is properly installed
+- Check firewall isn't blocking port 5000
+- Verify CORS settings in `app.py`
+
+### Frontend Issues
+
+**React dev server won't start:**
+- Check if port 8080/8081 is already in use
+- Ensure Node.js 16+ is installed
+- Delete `node_modules` and run `npm install` again
+
+**Buttons not working:**
+- Open browser console (F12) and check for errors
+- Verify Socket.IO connection is established
+- Check that console.log messages appear when clicking buttons
+- Ensure Flask backend is running on port 5000
+
 **Algorithm not starting:**
 - Ensure at least 3 cities are placed
 - Check browser console for errors
-- Verify Flask server is running
+- Verify WebSocket connection status indicator shows "Connected"
+- Check Flask backend logs for incoming events
 
 **Slow performance:**
 - Reduce number of ants
@@ -316,6 +446,7 @@ files/
 - Check WebSocket connection in browser console
 - Refresh the page and try again
 - Ensure no firewall is blocking WebSocket connections
+- Verify Flask backend is receiving `start_aco` events
 
 ## Real-World Applications
 
